@@ -242,21 +242,30 @@ class StartupAnalyzer(object):
         """
         Print summary of startup times for plugins.
         """
-        title = "Top %i plugins slowing %s's startup" % (n, get_exe(self.cmd))
-        length = len(title)
-        print(''.center(length, '='))
-        print(title)
-        print(''.center(length, '='))
+        lines = []
 
         # Compute average times
         avg_data = self.average_data()
         # Sort by average time
         rank = 0
-        for name, time in sort_data(avg_data)[:n]:
+        sorted_data = sort_data(avg_data)
+        if n != 0:
+            sorted_data = sorted_data[:n]
+        for name, time in sorted_data:
             rank += 1
-            print("%i\t%7.3f   %s" % (rank, time, name))
+            lines.append("{:>3}   {:7.3f}   {}".format(rank, time, name))
 
-        print(''.center(length, '='))
+        # prints
+        max_width = max([len(i) for i in lines])
+        buf = []
+        sep = ''.center(max_width, '-')
+        buf.append(sep)
+        buf.append("Plugin startup times")
+        buf.append(sep)
+        buf.extend(lines)
+        buf.append(sep)
+
+        print('\n'.join(buf))
 
 
 def sort_data(d, reverse=True):
@@ -272,9 +281,6 @@ def main():
     )
     parser.add_argument("-o", dest="csv", type=str, help="Export result to a csv file")
     parser.add_argument(
-        "-p", dest="plot", action='store_true', help="Plot result as a bar chart"
-    )
-    parser.add_argument(
         "-s",
         dest="check_system",
         action='store_true',
@@ -284,7 +290,7 @@ def main():
         "-n",
         dest="n",
         type=int,
-        default=10,
+        default=0,
         help="Number of plugins to list in the summary",
     )
     parser.add_argument(
@@ -313,12 +319,9 @@ def main():
 
     # Run analysis
     analyzer = StartupAnalyzer(args)
-    if n > 0:
-        analyzer.print_summary(n)
+    analyzer.print_summary(n)
     if output_filename is not None:
         analyzer.export(output_filename)
-    if args.plot:
-        analyzer.plot()
 
 
 if __name__ == "__main__":
