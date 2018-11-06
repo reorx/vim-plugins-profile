@@ -69,9 +69,9 @@ class StartupData(object):
         """
         Generate startup data.
         """
-        self.__run_vim()
+        self._run_vim()
         try:
-            self.__load_times(check_system)
+            self._load_times(check_system)
         except RuntimeError:
             print("\nNo plugin found. Exiting.")
             sys.exit()
@@ -79,7 +79,7 @@ class StartupData(object):
         if not self.times:
             sys.exit()
 
-    def __guess_plugin_dir(self, log_txt):
+    def _guess_plugin_dir(self, log_txt):
         """
         Try to guess the vim directory containing plugins.
         """
@@ -104,7 +104,7 @@ class StartupData(object):
         else:
             raise RuntimeError("no user plugin found")
 
-    def __load_times(self, check_system=False):
+    def _load_times(self, check_system=False):
         """
         Load startup times for log file.
         """
@@ -116,7 +116,7 @@ class StartupData(object):
 
             # Try to guess the folder based on the logs themselves
             try:
-                plugin_dir = self.__guess_plugin_dir(log_txt)
+                plugin_dir = self._guess_plugin_dir(log_txt)
                 matches = re.findall(
                     "^\d+.\d+\s+\d+.\d+\s+(\d+.\d+): "
                     "sourcing %s/([^/]+)/" % plugin_dir,
@@ -161,12 +161,12 @@ class StartupData(object):
         if not self.times:
             print("No system plugin found.")
 
-    def __run_vim(self):
+    def _run_vim(self):
         """
         Run vim/nvim to generate startup logs.
         """
         print("Running %s to generate startup logs..." % get_exe(self.cmd), end="")
-        self.__clean_log()
+        self._clean_log()
         full_cmd = to_list(self.cmd) + [
             "--startuptime",
             self.log_filename,
@@ -177,7 +177,7 @@ class StartupData(object):
         subprocess.call(full_cmd, shell=False)
         print(" done.")
 
-    def __clean_log(self):
+    def _clean_log(self):
         """
         Clean log file.
         """
@@ -188,7 +188,7 @@ class StartupData(object):
         """
         Destructor taking care of clean up.
         """
-        self.__clean_log()
+        self._clean_log()
 
 
 class StartupAnalyzer(object):
