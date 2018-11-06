@@ -52,24 +52,6 @@ def is_subdir(paths, subdir):
     return False
 
 
-def stdev(arr):
-    """
-    Compute the standard deviation.
-    """
-    if sys.version_info >= (3, 0):
-        import statistics
-
-        return statistics.pstdev(arr)
-    else:
-        # Dependency on NumPy
-        try:
-            import numpy
-
-            return numpy.std(arr, axis=0)
-        except ImportError:
-            return 0.0
-
-
 class StartupData(object):
     """
     Data for (n)vim startup (timings etc.).
@@ -240,39 +222,6 @@ class StartupAnalyzer(object):
         Return average times for each plugin.
         """
         return {k: sum(v) / len(v) for k, v in self.data.items()}
-
-    def stdev_data(self):
-        """
-        Return standard deviation for each plugin.
-        """
-        return {k: stdev(v) for k, v in self.data.items()}
-
-    def plot(self):
-        """
-        Plot startup data.
-        """
-        import pylab
-
-        print("Plotting result...", end="")
-        avg_data = self.average_data()
-        avg_data = self.__sort_data(avg_data, False)
-        if len(self.raw_data) > 1:
-            err = self.stdev_data()
-            sorted_err = [err[k] for k in list(zip(*avg_data))[0]]
-        else:
-            sorted_err = None
-        pylab.barh(
-            range(len(avg_data)),
-            list(zip(*avg_data))[1],
-            xerr=sorted_err,
-            align='center',
-            alpha=0.4,
-        )
-        pylab.yticks(range(len(avg_data)), list(zip(*avg_data))[0])
-        pylab.xlabel("Average startup time (ms)")
-        pylab.ylabel("Plugins")
-        pylab.show()
-        print(" done.")
 
     def export(self, output_filename="result.csv"):
         """
