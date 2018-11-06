@@ -61,6 +61,7 @@ class StartupData(object):
         super(StartupData, self).__init__()
         self.cmd = cmd
         self.log_filename = log_filename
+        self.log_txt = None
         self.times = dict()
         self.system_dirs = ["/usr", "/usr/local"]
         self.generate(check_system)
@@ -112,6 +113,7 @@ class StartupData(object):
         print("Loading and processing logs...", end="")
         with open(self.log_filename, 'r') as log:
             log_txt = log.read()
+            self.log_txt = log_txt
             plugin_dir = ""
 
             # Try to guess the folder based on the logs themselves
@@ -196,7 +198,7 @@ class StartupAnalyzer(object):
     Analyze startup times for (n)vim.
     """
 
-    def __init__(self, param):
+    def __init__(self, param, debug=False):
         super(StartupAnalyzer, self).__init__()
         self.runs = param.runs
         self.cmd = param.cmd
@@ -207,6 +209,11 @@ class StartupAnalyzer(object):
             for i in range(self.runs)
         ]
         self.data = self.process_data()
+        self.debug = debug
+
+        if self.debug:
+            for i in self.raw_data:
+                print('log file: {}, content:\n{}'.format(i.log_filename, i.log_txt))
 
     def process_data(self):
         """
@@ -258,12 +265,14 @@ class StartupAnalyzer(object):
         # prints
         max_width = max([len(i) for i in lines])
         buf = []
-        sep = ''.center(max_width, '-')
-        buf.append(sep)
-        buf.append("Plugin startup times")
-        buf.append(sep)
+        buf.append("Plugin startup times:")
+        # head
+        head_sep = "{:->3}   {:->7}   {}".format('', '', '-' * (max_width - 16))
+        buf.append(head_sep)
+        buf.append("{:>3}   {:>7}   {}".format('#', 'ms', 'plugin'))
+        buf.append(head_sep)
+        # body
         buf.extend(lines)
-        buf.append(sep)
 
         print('\n'.join(buf))
 
@@ -304,9 +313,10 @@ def main():
         dest="cmd",
         nargs=argparse.REMAINDER,
         type=str,
-        default="vim",
+        default="nvim",
         help="vim/neovim executable or command",
     )
+    parser.add_argument('-d', '--debug', action='store_true', help='enable debug log')
 
     # Parse CLI arguments
     args = parser.parse_args()
@@ -315,10 +325,10 @@ def main():
 
     # Command (default = vim)
     if args.cmd == []:
-        args.cmd = "vim"
+        args.cmd = "nvim"
 
     # Run analysis
-    analyzer = StartupAnalyzer(args)
+    analyzer = StartupAnalyzer(args, debug=args.debug)
     analyzer.print_summary(n)
     if output_filename is not None:
         analyzer.export(output_filename)
