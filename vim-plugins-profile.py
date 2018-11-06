@@ -165,7 +165,7 @@ class StartupData(object):
         """
         Run vim/nvim to generate startup logs.
         """
-        print("Running %s to generate startup logs..." % get_exe(self.cmd), end="")
+        print("Running %s to generate startup logs..." % get_exe(self.cmd))
         self._clean_log()
         full_cmd = to_list(self.cmd) + [
             "--startuptime",
@@ -174,8 +174,8 @@ class StartupData(object):
             "-c",
             "q",
         ]
+        print('cmd: {}'.format(' '.join(full_cmd)))
         subprocess.call(full_cmd, shell=False)
-        print(" done.")
 
     def _clean_log(self):
         """
@@ -230,7 +230,7 @@ class StartupAnalyzer(object):
         assert len(self.data) > 0
         print("Writing result to %s..." % output_filename, end="")
         with open(output_filename, 'w') as fp:
-            writer = csv.writer(fp, delimiter='\t')
+            writer = csv.writer(fp)
             # Compute average times
             avg_data = self.average_data()
             # Sort by average time
