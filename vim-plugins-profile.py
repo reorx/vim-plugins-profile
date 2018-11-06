@@ -234,7 +234,7 @@ class StartupAnalyzer(object):
             # Compute average times
             avg_data = self.average_data()
             # Sort by average time
-            for name, avg_time in self.__sort_data(avg_data):
+            for name, avg_time in sort_data(avg_data):
                 writer.writerow(["%.3f" % avg_time, name])
         print(" done.")
 
@@ -252,18 +252,18 @@ class StartupAnalyzer(object):
         avg_data = self.average_data()
         # Sort by average time
         rank = 0
-        for name, time in self.__sort_data(avg_data)[:n]:
+        for name, time in sort_data(avg_data)[:n]:
             rank += 1
             print("%i\t%7.3f   %s" % (rank, time, name))
 
         print(''.center(length, '='))
 
-    @staticmethod
-    def __sort_data(d, reverse=True):
-        """
-        Sort data by decreasing time.
-        """
-        return sorted(d.items(), key=operator.itemgetter(1), reverse=reverse)
+
+def sort_data(d, reverse=True):
+    """
+    Sort data by decreasing time.
+    """
+    return sorted(d.items(), key=operator.itemgetter(1), reverse=reverse)
 
 
 def main():
