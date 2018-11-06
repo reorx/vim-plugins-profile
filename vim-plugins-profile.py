@@ -58,20 +58,23 @@ def stdev(arr):
     """
     if sys.version_info >= (3, 0):
         import statistics
+
         return statistics.pstdev(arr)
     else:
         # Dependency on NumPy
         try:
             import numpy
+
             return numpy.std(arr, axis=0)
         except ImportError:
-            return 0.
+            return 0.0
 
 
 class StartupData(object):
     """
     Data for (n)vim startup (timings etc.).
     """
+
     def __init__(self, cmd, log_filename, check_system=False):
         super(StartupData, self).__init__()
         self.cmd = cmd
@@ -102,9 +105,12 @@ class StartupData(object):
 
         # Get common plugin dir if any
         vim_subdirs = "autoload|ftdetect|plugin|syntax"
-        matches = re.findall("^\d+.\d+\s+\d+.\d+\s+\d+.\d+: "
-                             "sourcing (.+?)/(?:[^/]+/)(?:%s)/[^/]+"
-                             % vim_subdirs, log_txt, re.MULTILINE)
+        matches = re.findall(
+            "^\d+.\d+\s+\d+.\d+\s+\d+.\d+: "
+            "sourcing (.+?)/(?:[^/]+/)(?:%s)/[^/]+" % vim_subdirs,
+            log_txt,
+            re.MULTILINE,
+        )
         for plugin_dir in matches:
             # Ignore system plugins
             if not is_subdir(self.system_dirs, plugin_dir):
@@ -129,9 +135,12 @@ class StartupData(object):
             # Try to guess the folder based on the logs themselves
             try:
                 plugin_dir = self.__guess_plugin_dir(log_txt)
-                matches = re.findall("^\d+.\d+\s+\d+.\d+\s+(\d+.\d+): "
-                                     "sourcing %s/([^/]+)/" % plugin_dir,
-                                     log_txt, re.MULTILINE)
+                matches = re.findall(
+                    "^\d+.\d+\s+\d+.\d+\s+(\d+.\d+): "
+                    "sourcing %s/([^/]+)/" % plugin_dir,
+                    log_txt,
+                    re.MULTILINE,
+                )
                 for res in matches:
                     time = res[0]
                     plugin = res[1]
@@ -148,9 +157,12 @@ class StartupData(object):
 
             if check_system:
                 for d in self.system_dirs:
-                    matches = re.findall("^\d+.\d+\s+\d+.\d+\s+(\d+.\d+): "
-                                         "sourcing %s/.+/([^/]+.vim)\n" % d,
-                                         log_txt, re.MULTILINE)
+                    matches = re.findall(
+                        "^\d+.\d+\s+\d+.\d+\s+(\d+.\d+): "
+                        "sourcing %s/.+/([^/]+.vim)\n" % d,
+                        log_txt,
+                        re.MULTILINE,
+                    )
                     for res in matches:
                         time = res[0]
                         plugin = "*%s" % res[1]
@@ -171,11 +183,15 @@ class StartupData(object):
         """
         Run vim/nvim to generate startup logs.
         """
-        print("Running %s to generate startup logs..." % get_exe(self.cmd),
-              end="")
+        print("Running %s to generate startup logs..." % get_exe(self.cmd), end="")
         self.__clean_log()
-        full_cmd = to_list(self.cmd) + ["--startuptime", self.log_filename,
-                                        "-f", "-c", "q"]
+        full_cmd = to_list(self.cmd) + [
+            "--startuptime",
+            self.log_filename,
+            "-f",
+            "-c",
+            "q",
+        ]
         subprocess.call(full_cmd, shell=False)
         print(" done.")
 
@@ -197,27 +213,33 @@ class StartupAnalyzer(object):
     """
     Analyze startup times for (n)vim.
     """
+
     def __init__(self, param):
         super(StartupAnalyzer, self).__init__()
         self.runs = param.runs
         self.cmd = param.cmd
-        self.raw_data = [StartupData(self.cmd, "vim_%i.log" % (i+1),
-                                     check_system=param.check_system)
-                         for i in range(self.runs)]
+        self.raw_data = [
+            StartupData(
+                self.cmd, "vim_%i.log" % (i + 1), check_system=param.check_system
+            )
+            for i in range(self.runs)
+        ]
         self.data = self.process_data()
 
     def process_data(self):
         """
         Merge startup times for each plugin.
         """
-        return {k: [d.times[k] for d in self.raw_data]
-                for k in self.raw_data[0].times.keys()}
+        return {
+            k: [d.times[k] for d in self.raw_data]
+            for k in self.raw_data[0].times.keys()
+        }
 
     def average_data(self):
         """
         Return average times for each plugin.
         """
-        return {k: sum(v)/len(v) for k, v in self.data.items()}
+        return {k: sum(v) / len(v) for k, v in self.data.items()}
 
     def stdev_data(self):
         """
@@ -239,8 +261,13 @@ class StartupAnalyzer(object):
             sorted_err = [err[k] for k in list(zip(*avg_data))[0]]
         else:
             sorted_err = None
-        pylab.barh(range(len(avg_data)), list(zip(*avg_data))[1],
-                   xerr=sorted_err, align='center', alpha=0.4)
+        pylab.barh(
+            range(len(avg_data)),
+            list(zip(*avg_data))[1],
+            xerr=sorted_err,
+            align='center',
+            alpha=0.4,
+        )
         pylab.yticks(range(len(avg_data)), list(zip(*avg_data))[0])
         pylab.xlabel("Average startup time (ms)")
         pylab.ylabel("Plugins")
@@ -292,19 +319,39 @@ class StartupAnalyzer(object):
 
 def main():
     parser = argparse.ArgumentParser(
-            description='Analyze startup times of vim/neovim plugins.')
-    parser.add_argument("-o", dest="csv", type=str,
-                        help="Export result to a csv file")
-    parser.add_argument("-p", dest="plot", action='store_true',
-                        help="Plot result as a bar chart")
-    parser.add_argument("-s", dest="check_system", action='store_true',
-                        help="Consider system plugins as well (marked with *)")
-    parser.add_argument("-n", dest="n", type=int, default=10,
-                        help="Number of plugins to list in the summary")
-    parser.add_argument("-r", dest="runs", type=int, default=1,
-                        help="Number of runs (for average/standard deviation)")
-    parser.add_argument(dest="cmd", nargs=argparse.REMAINDER, type=str, default="vim",
-                        help="vim/neovim executable or command")
+        description='Analyze startup times of vim/neovim plugins.'
+    )
+    parser.add_argument("-o", dest="csv", type=str, help="Export result to a csv file")
+    parser.add_argument(
+        "-p", dest="plot", action='store_true', help="Plot result as a bar chart"
+    )
+    parser.add_argument(
+        "-s",
+        dest="check_system",
+        action='store_true',
+        help="Consider system plugins as well (marked with *)",
+    )
+    parser.add_argument(
+        "-n",
+        dest="n",
+        type=int,
+        default=10,
+        help="Number of plugins to list in the summary",
+    )
+    parser.add_argument(
+        "-r",
+        dest="runs",
+        type=int,
+        default=1,
+        help="Number of runs (for average/standard deviation)",
+    )
+    parser.add_argument(
+        dest="cmd",
+        nargs=argparse.REMAINDER,
+        type=str,
+        default="vim",
+        help="vim/neovim executable or command",
+    )
 
     # Parse CLI arguments
     args = parser.parse_args()
@@ -323,6 +370,7 @@ def main():
         analyzer.export(output_filename)
     if args.plot:
         analyzer.plot()
+
 
 if __name__ == "__main__":
     main()
